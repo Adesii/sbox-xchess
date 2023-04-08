@@ -84,58 +84,69 @@ public partial class Player : AnimatedEntity
 		{
 			DebugOverlay.Sphere( position.Value, 10, Color.Red, 0 );
 			var tile = Chessboard.Instance.GetChessTile( position.Value );
-			if ( tile != null )
+
+			bool wantsToattack = false;
+			if ( SelectedPiece.IsValid() )
 			{
-				bool wantsToattack = false;
-				if ( SelectedPiece.IsValid() )
+				if ( CachedMoves is not null )
+				{
+					foreach ( var move in CachedMoves )
+					{
+						if ( Game.IsServer )
+							DebugOverlay.Sphere( Chessboard.Instance.ToWorld( move.To ), 20, move.IsEnemy ? Color.Red : Color.Green, 0 );
+						if ( move.IsEnemy && tile.IsValid() && move.To == tile.MapPosition )
+							wantsToattack = true;
+					}
+				}
+
+				//Log.Info( $"Possible moves: {CachedMoves?.Count}" );
+				DebugOverlay.Sphere( SelectedPiece.Position, 40, Color.Blue, 0 );
+			}
+			if ( Input.Pressed( InputButton.PrimaryAttack ) )
+			{
+
+				if ( tile != null && tile.CurrentPiece.IsValid() && !wantsToattack /* && tile.CurrentPiece.Team == Team  */)
+				{
+					SelectedPiece = tile.CurrentPiece;
+					SelectedPiece.Owner = this;
+					SelectedPiece.Predictable = true;
+					CachedMoves = SelectedPiece.MoveComponent.GetPossibleMoves();
+					CachedMovesPiece = SelectedPiece;
+
+				}
+				else if ( SelectedPiece.IsValid() )
 				{
 					if ( CachedMoves is not null )
 					{
+
 						foreach ( var move in CachedMoves )
 						{
-							if ( Game.IsServer )
-								DebugOverlay.Sphere( Chessboard.Instance.ToWorld( move.To ), 20, move.IsEnemy ? Color.Red : Color.Green, 0 );
-							if ( move.IsEnemy && move.To == tile.MapPosition )
-								wantsToattack = true;
-						}
-					}
-
-					//Log.Info( $"Possible moves: {CachedMoves?.Count}" );
-					DebugOverlay.Sphere( SelectedPiece.Position, 40, Color.Blue, 0 );
-				}
-				if ( Input.Pressed( InputButton.PrimaryAttack ) )
-				{
-
-					if ( tile.CurrentPiece.IsValid() && !wantsToattack /* && tile.CurrentPiece.Team == Team  */)
-					{
-						SelectedPiece = tile.CurrentPiece;
-						SelectedPiece.Owner = this;
-						SelectedPiece.Predictable = true;
-						CachedMoves = SelectedPiece.MoveComponent.GetPossibleMoves();
-						CachedMovesPiece = SelectedPiece;
-
-					}
-					else if ( SelectedPiece.IsValid() )
-					{
-						if ( CachedMoves is not null )
-							foreach ( var move in CachedMoves )
+							if ( !tile.IsValid() ) break;
+							if ( move.To == tile.MapPosition )
 							{
-								if ( move.To == tile.MapPosition )
-								{
-									SelectedPiece.MoveComponent.MoveTo( move );
-									SelectedPiece = null;
-									CachedMoves = null;
-									CachedMovesPiece = null;
-									return;
-								}
+								SelectedPiece.MoveComponent.MoveTo( move );
+								SelectedPiece = null;
+								CachedMoves = null;
+								CachedMovesPiece = null;
+								return;
 							}
-						else
-						{
-							Log.Info( "No cached moves" );
 						}
+						SelectedPiece = null;
+					}
+					else
+					{
+						Log.Info( "No cached moves" );
 					}
 				}
 
+
+			}
+
+			if ( Input.Pressed( InputButton.SecondaryAttack ) )
+			{
+				SelectedPiece = null;
+				CachedMoves = null;
+				CachedMovesPiece = null;
 			}
 
 		}

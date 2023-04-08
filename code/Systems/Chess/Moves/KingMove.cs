@@ -173,7 +173,6 @@ public partial class KingMove : ChessMoveComponent
 	public void PostGlobalMove( ChessMoveComponent ComponentThatMoved, MoveInfo CurrentMove )
 	{
 		IsCurrentlyChecked = IsInCheck();
-		Log.Info( "King is checked: " + IsCurrentlyChecked );
 
 		if ( IsCurrentlyChecked )
 			GetPossibleMoves();
