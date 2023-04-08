@@ -1,0 +1,67 @@
+{
+  "SchemaVersion": 1,
+  "Name": null,
+  "Description": null,
+  "Root": {
+    "Guid": "25213fc2-bcc5-4ed5-a69a-9b8733331b38",
+    "Class": "ChessPiece",
+    "Entities": [
+      {
+        "Guid": "9a7c319b-59e8-4294-b02d-75222f15fd15",
+        "Class": "model_entity",
+        "Entities": [],
+        "Components": [],
+        "Keys": {
+          "Model": {
+            "Type": "Model",
+            "Value": "\u0022models/sbox_props/burger_box/burger_box.vmdl\u0022"
+          },
+          "_name": {
+            "Value": "\u0022Untitled Entity\u0022"
+          },
+          "_localposition": {
+            "Value": "\u00220,0,0\u0022"
+          },
+          "_localrotation": {
+            "Value": "\u00220,0,0\u0022"
+          },
+          "_scale": {
+            "Value": "4"
+          },
+          "_tags": {
+            "Value": "\u0022\u0022"
+          }
+        }
+      }
+    ],
+    "Components": [
+      {
+        "Guid": "4552a169-f73e-40bc-a4f8-dc5da988617a",
+        "Class": "KingMove",
+        "Keys": {
+          "_name": {
+            "Value": "\u0022KingMove\u0022"
+          },
+          "_tags": {}
+        }
+      }
+    ],
+    "Keys": {
+      "_name": {
+        "Value": "\u0022Root Entity\u0022"
+      },
+      "_localposition": {
+        "Value": "\u00220,0,0\u0022"
+      },
+      "_localrotation": {
+        "Value": "\u00220,0,0\u0022"
+      },
+      "_scale": {
+        "Value": "1"
+      },
+      "_tags": {
+        "Value": "\u0022\u0022"
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "SchemaVersion": 1,
+  "Name": null,
+  "Description": null,
+  "Root": {
+    "Guid": "aef2951a-7d53-405b-8eaf-0b3c0c333f8a",
+    "Class": "ChessPiece",
+    "Entities": [
+      {
+        "Guid": "f8cfbc59-6ac2-45aa-89aa-70548b6d18d4",
+        "Class": "model_entity",
+        "Entities": [],
+        "Components": [],
+        "Keys": {
+          "Model": {
+            "Type": "Model",
+            "Value": "\u0022models/sbox_props/cola_can/cola_can.vmdl\u0022"
+          },
+          "_name": {
+            "Value": "\u0022Untitled Entity\u0022"
+          },
+          "_localposition": {
+            "Value": "\u00220,0,0\u0022"
+          },
+          "_localrotation": {
+            "Value": "\u00220,0,0\u0022"
+          },
+          "_scale": {
+            "Value": "5"
+          },
+          "_tags": {
+            "Value": "\u0022\u0022"
+          }
+        }
+      }
+    ],
+    "Components": [
+      {
+        "Guid": "5dee89aa-b561-41c4-af21-6537632f6f0d",
+        "Class": "PawnMove",
+        "Keys": {
+          "_name": {
+            "Value": "\u0022PawnMove\u0022"
+          },
+          "_tags": {}
+        }
+      }
+    ],
+    "Keys": {
+      "_name": {
+        "Value": "\u0022Pawn\u0022"
+      },
+      "_localposition": {
+        "Value": "\u00220,0,0\u0022"
+      },
+      "_localrotation": {
+        "Value": "\u00220,0,0\u0022"
+      },
+      "_scale": {
+        "Value": "1"
+      },
+      "_tags": {
+        "Value": "\u0022\u0022"
+      }
+    }
+  }
+}

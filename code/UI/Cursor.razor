@@ -1,0 +1,23 @@
+@using Chess;
+@namespace Chess.UI
+@attribute [StyleSheet("/UI/Cursor.scss")]
+@inherits Panel
+
+<root>
+	<div class="CursorImage" @ref="cursorImage"></div>
+</root>
+
+@code {
+	public Panel cursorImage { get; set; }
+	public static Panel hovered;
+	public static Vector2 RealMouse;
+
+	public static Vector2 FakeMousePosition;
+
+	public override void Tick()
+	{
+		if (!cursorImage.IsValid()) return;
+		cursorImage.Style.Left = Length.Fraction((FakeMousePosition.x / Screen.Width).Clamp(0, 0.999f));
+		cursorImage.Style.Top = Length.Fraction((FakeMousePosition.y / Screen.Height).Clamp(0, 0.999f));
+	}
+}
