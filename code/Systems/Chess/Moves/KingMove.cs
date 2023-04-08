@@ -100,7 +100,7 @@ public partial class KingMove : ChessMoveComponent
 			}
 
 		//Checkmate
-		if ( moves.Count == 0 )
+		if ( moves.Count == 0 && Game.IsServer )
 		{
 			if ( IsInCheck() )
 			{

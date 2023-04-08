@@ -129,7 +129,7 @@ public partial class ChessMoveComponent : ChessComponent
 
 	protected bool WouldBeInCheck( Vector2Int position )
 	{
-		foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove ) )
+		foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove && x.IsValid() ) )
 		{
 			if ( piece.MoveComponent.GetPossibleMoves( true ).Any( x => x.To == position ) )
 			{

@@ -87,7 +87,7 @@ public partial class Chessboard : Entity
 		var board = Instance;
 		board.CreateBoard();
 		board.PlacePiecesFromAN( "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" );
-		board.Pieces.Clear();
+		board.Pieces?.Clear();
 	}
 
 	[ConCmd.Server]
