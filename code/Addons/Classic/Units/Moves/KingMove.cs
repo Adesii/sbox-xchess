@@ -1,9 +1,10 @@
+using Chess.Addons.Classic;
 using Sandbox;
 
 namespace Chess;
 
 [Prefab]
-public partial class KingMove : ChessMoveComponent
+public partial class KingMove : ClassicChessMoveComponent
 {
 	[Net]
 	public bool IsCurrentlyChecked { get; set; }
@@ -30,7 +31,7 @@ public partial class KingMove : ChessMoveComponent
 		{
 			var current = Entity.MapPosition;
 			current += dir;
-			var tile = Chessboard.Instance.GetTile( current );
+			var tile = ClassicBoard.Instance.GetTile( current );
 			if ( tile is null )
 				continue;
 			if ( tile.CurrentPiece.IsValid() )
@@ -74,7 +75,7 @@ public partial class KingMove : ChessMoveComponent
 				while ( true )
 				{
 					current += dir;
-					var tile = Chessboard.Instance.GetTile( current );
+					var tile = ClassicBoard.Instance.GetTile( current );
 					if ( tile is null )
 						break;
 					if ( tile.CurrentPiece.IsValid() )
@@ -103,7 +104,7 @@ public partial class KingMove : ChessMoveComponent
 
 				//Check all other team pieces to see if they can block the check
 				bool canBlock = false;
-				foreach ( var piece in Chessboard.Instance.GetTeamPieces( Entity ) )
+				foreach ( var piece in ClassicBoard.Instance.GetTeamPieces( Entity ) )
 				{
 					if ( piece.MoveComponent.GetPossibleMoves().Count > 0 )
 					{
@@ -148,23 +149,23 @@ public partial class KingMove : ChessMoveComponent
 
 
 	[Event( "Chess.Castling" )]
-	public void Castling( ChessMoveComponent component, MoveInfo CurrentMove )
+	public void Castling( ClassicChessMoveComponent component, MoveInfo CurrentMove )
 	{
 		Log.Info( $"Castling {component} from: {CurrentMove.From} to {CurrentMove.To}" );
 		if ( component != this ) return;
 		Log.Info( "Castling" );
 		var direction = (CurrentMove.To - CurrentMove.From).Normal;
-		var rook = Chessboard.Instance.GetTile( Entity.MapPosition + direction );
+		var rook = ClassicBoard.Instance.GetTile( Entity.MapPosition + direction );
 		if ( !rook.IsValid() )
 		{
 			Log.Error( "Rook not found at " + (Entity.MapPosition - direction) + "" );
 			return;
 		}
-		Chessboard.Instance.Move( rook.CurrentPiece, direction + CurrentMove.From );
+		ClassicBoard.Instance.Move( rook.CurrentPiece, direction + CurrentMove.From );
 	}
 
 	[Event( "Chess.PostGlobalMove" )]
-	public void PostGlobalMove( ChessMoveComponent ComponentThatMoved, MoveInfo CurrentMove )
+	public void PostGlobalMove( ClassicChessMoveComponent ComponentThatMoved, MoveInfo CurrentMove )
 	{
 
 		/* if ( IsCurrentlyChecked )

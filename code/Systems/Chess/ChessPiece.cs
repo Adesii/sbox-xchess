@@ -10,7 +10,7 @@ public partial class ChessPiece : Entity
 	public Vector2Int MapPosition { get; set; }
 
 	[BindComponent]
-	public ChessMoveComponent MoveComponent { get; }
+	public ClassicChessMoveComponent MoveComponent { get; }
 
 	public override void Spawn()
 	{
@@ -19,7 +19,7 @@ public partial class ChessPiece : Entity
 		Predictable = true;
 		if ( MoveComponent == null )
 		{
-			Components.Create<ChessMoveComponent>();
+			Components.Create<ClassicChessMoveComponent>();
 			Log.Warning( $"Piece {this} has no move component, creating one" );
 		}
 	}

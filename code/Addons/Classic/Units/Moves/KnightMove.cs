@@ -1,7 +1,9 @@
+using Chess.Addons.Classic;
+
 namespace Chess;
 
 [Prefab]
-public class KnightMove : ChessMoveComponent
+public class KnightMove : ClassicChessMoveComponent
 {
 
 	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
@@ -22,7 +24,7 @@ public class KnightMove : ChessMoveComponent
 		{
 			var current = Entity.MapPosition;
 			current += dir;
-			var tile = Chessboard.Instance.GetTile( current );
+			var tile = ClassicBoard.Instance.GetTile( current );
 			if ( tile is null )
 				continue;
 			var code = ClassifyMove( request, current, tile, ref moves );

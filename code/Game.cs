@@ -1,4 +1,7 @@
-﻿namespace Chess;
+﻿using Chess.Addons.Classic;
+using Chess.Systems.Chess;
+
+namespace Chess;
 
 
 public partial class ChessGame : GameManager
@@ -17,9 +20,14 @@ public partial class ChessGame : GameManager
 	[Event.Entity.PostSpawn]
 	public void PostSpawn()
 	{
-		Chessboard = Entity.All.OfType<Chessboard>().FirstOrDefault();
-
-		Chessboard.CreateBoard();
+		var spot = Entity.All.OfType<ChessboardSpot>().FirstOrDefault();
+		if ( spot != null )
+		{
+			Chessboard = new ClassicBoard()
+			{
+				Transform = spot.Transform
+			};
+		}
 	}
 
 	/// <summary>

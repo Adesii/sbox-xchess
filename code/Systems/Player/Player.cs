@@ -1,4 +1,5 @@
 using System;
+using Chess.Addons.Classic;
 using Chess.UI;
 
 namespace Chess;
@@ -66,7 +67,7 @@ public partial class Player : AnimatedEntity
 	public ChessPiece SelectedPiece { get; set; }
 
 	[SkipHotload]
-	private IList<ChessMoveComponent.MoveInfo> CachedMoves { get; set; }
+	private IList<ClassicChessMoveComponent.MoveInfo> CachedMoves { get; set; }
 	[SkipHotload]
 	public ChessPiece CachedMovesPiece { get; set; }
 
@@ -77,6 +78,7 @@ public partial class Player : AnimatedEntity
 	/// <param name="cl"></param>
 	public override void Simulate( IClient cl )
 	{
+		if ( !Chessboard.Instance.IsValid() ) return;
 		//trace mouseray and see if we hit a chesspiece
 		Plane chessplane = new( Chessboard.Instance.Position, Chessboard.Instance.Rotation.Up );
 		var position = chessplane.Trace( MouseRay );
@@ -159,7 +161,7 @@ public partial class Player : AnimatedEntity
 	/// <param name="cl"></param>
 	public override void FrameSimulate( IClient cl )
 	{
-		if ( Chessboard.Instance is not Chessboard chessboard )
+		if ( ClassicBoard.Instance is not Chessboard chessboard )
 			return;
 
 		if ( DebugFly )
