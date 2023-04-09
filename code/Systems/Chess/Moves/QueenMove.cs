@@ -3,7 +3,7 @@ namespace Chess;
 [Prefab]
 public class QueenMove : ChessMoveComponent
 {
-	public override List<MoveInfo> GetPossibleMoves( bool CheckCheck = false, bool CheckMate = false )
+	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
 		List<MoveInfo> moves = new List<MoveInfo>();
 		//make a queen move for now but stop at the first enemy
@@ -22,82 +22,46 @@ public class QueenMove : ChessMoveComponent
 		foreach ( var dir in listofDirections )
 		{
 			var current = Entity.MapPosition;
+			if ( request.CheckForCheckOverlap )
+			{
+				moves.Clear();
+			}
 			while ( true )
 			{
 				current += dir;
 				var tile = Chessboard.Instance.GetTile( current );
 				if ( tile is null )
 					break;
-				if ( tile.CurrentPiece.IsValid() )
+				var code = ClassifyMove( request, current, tile, ref moves );
+
+				if ( request.CheckForCheckOverlap )
 				{
-					if ( CheckMate || tile.CurrentPiece.Team != Entity.Team )
+					if ( code == ReturnCode.Check )
 					{
-						if ( !CheckMate || !IsKing( tile.CurrentPiece ) )
-							moves.Add( new MoveInfo() { To = current, IsEnemy = true } );
+						moves = moves.Where( x => x.To == request.CheckForCheckOverlapPosition ).ToList();
+						//Log.Info( $"Found overlapp at {request.CheckForCheckOverlapPosition} remaining moves = {moves.Count}" );
+						return moves;
 					}
-					if ( !CheckMate )
-						break;
 				}
-				moves.Add( new MoveInfo() { To = current } );
+
+				if ( code == ReturnCode.Break )
+					break;
+				if ( code == ReturnCode.Return )
+					return moves;
 			}
+
+
 		}
 
-		if ( !CheckCheck && KingIsInCheck() )
+		if ( KingIsInCheck() )
 		{
-			moves = moves.Where( x => PositionSavesKing( x.To ) ).ToList();
+			moves = moves.Where( x => PositionSavesKing( x ) ).ToList();
+		}
+		else if ( request.CheckForMovedCheck )
+		{
+			moves = moves.Where( x => !WouldPutKingInCheckIfMovedTo( x ) ).ToList();
 		}
 		return moves;
-
-	}
-
-	public override bool BlocksCheck( Vector2Int position, Vector2Int kingPosition )
-	{
-		List<MoveInfo> moves = new List<MoveInfo>();
-		//make a queen move for now but stop at the first enemy
-		var listofDirections = new List<Vector2Int>(){
-			new Vector2Int(1,0),
-			new Vector2Int(1,1),
-			new Vector2Int(0,1),
-			new Vector2Int(-1,1),
-			new Vector2Int(-1,0),
-			new Vector2Int(-1,-1),
-			new Vector2Int(0,-1),
-			new Vector2Int(1,-1),
-		};
-		bool kingFound = false;
-		foreach ( var dir in listofDirections )
-		{
-			if ( kingFound )
-				break;
-			var current = Entity.MapPosition;
-			while ( true )
-			{
-				current += dir;
-				if ( current == kingPosition )
-				{
-					kingFound = true;
-					break;
-				}
-				var tile = Chessboard.Instance.GetTile( current );
-				if ( tile is null )
-					break;
-				if ( tile.CurrentPiece.IsValid() )
-				{
-					break;
-				}
-			}
-		}
-
-
-		if ( kingFound )
-		{
-			moves = moves.Where( x => x.To == position ).ToList();
-		}
-		else
-		{
-			return false;
-		}
-		return moves.Count > 0;
 
 	}
 }

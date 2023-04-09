@@ -11,9 +11,9 @@ public partial class KingMove : ChessMoveComponent
 	[Net]
 	public List<ChessPiece> PiecesChecking { get; set; } = new List<ChessPiece>();
 
-	public override List<MoveInfo> GetPossibleMoves( bool CheckCheck = false, bool CheckMate = false )
+	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
-		if ( CheckCheck ) return new List<MoveInfo>();
+		if ( request.CheckCheck ) return new List<MoveInfo>();
 		List<MoveInfo> moves = new List<MoveInfo>();
 		var listofDirections = new List<Vector2Int>(){
 			new Vector2Int(1,0),
@@ -35,18 +35,19 @@ public partial class KingMove : ChessMoveComponent
 				continue;
 			if ( tile.CurrentPiece.IsValid() )
 			{
-				if ( CheckMate || tile.CurrentPiece.Team != Entity.Team )
+				if ( tile.CurrentPiece.Team != Entity.Team )
 				{
-					if ( !CheckCheck && WouldBeInCheck( current ) )
+					if ( request.CheckCheck )
 					{
 						continue;
 					}
 					//check if the piece is Protected
 
 					bool protectedpiece = false;
-					foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove && x != tile.CurrentPiece ) )
+					foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove ) )
 					{
-						if ( piece.MoveComponent.GetPossibleMoves( true, true ).Any( x => x.To == tile.MapPosition ) )
+						var moves2 = piece.MoveComponent.GetPossibleMoves( new MoveSearchRequest() { CheckProtection = true } );
+						if ( moves2.Any( x => x.To == current ) )
 						{
 							protectedpiece = true;
 							break;
@@ -59,16 +60,11 @@ public partial class KingMove : ChessMoveComponent
 				}
 				continue;
 			}
-			if ( !CheckCheck )
-				if ( WouldBeInCheck( current ) )
-				{
-					continue;
-				}
 			moves.Add( new MoveInfo() { To = current } );
 		}
 
 		//castling
-		if ( !HasMoved )
+		if ( !HasMoved && !IsCurrentlyChecked )
 
 			//do a loop for each side
 			foreach ( var dir in new List<Vector2Int>() { new Vector2Int( 1, 0 ), new Vector2Int( -1, 0 ) } )
@@ -78,11 +74,6 @@ public partial class KingMove : ChessMoveComponent
 				while ( true )
 				{
 					current += dir;
-					if ( WouldBeInCheck( current ) )
-					{
-						Log.Info( "Can't castle because of check" );
-						break;
-					}
 					var tile = Chessboard.Instance.GetTile( current );
 					if ( tile is null )
 						break;
@@ -98,11 +89,15 @@ public partial class KingMove : ChessMoveComponent
 				}
 
 			}
+		IsCurrentlyChecked = IsInCheck();
+		moves = moves.Where( x => !WouldBeInCheck( x.To ) ).ToList();
 
+		if ( IsCurrentlyChecked )
+			moves = moves.Where( x => !WouldRemainInCheck( x.To ) ).ToList();
 		//Checkmate
 		if ( moves.Count == 0 && Game.IsServer )
 		{
-			if ( IsInCheck() )
+			if ( IsCurrentlyChecked )
 			{
 				Log.Info( "Possible Checkmate" );
 
@@ -125,29 +120,28 @@ public partial class KingMove : ChessMoveComponent
 			}
 		}
 
-		Log.Info( "King has " + moves.Count + " moves" );
 
-		moves = moves.Where( x => !WouldBeInCheck( x.To ) ).ToList();
+
+
+		//Log.Info( "King has " + moves.Count + " moves" );
 
 		return moves;
 	}
 
-	private bool IsInCheck()
+	private bool WouldRemainInCheck( Vector2Int position )
 	{
-		PiecesChecking.Clear();
-		foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove ) )
+		foreach ( var item in PiecesChecking )
 		{
-			if ( piece.MoveComponent.GetPossibleMoves( true ).Any( x => x.To == Entity.MapPosition ) )
-			{
-				PiecesChecking.Add( piece );
-				IsCurrentlyChecked = true;
+			if ( item.MoveComponent.GetPossibleMoves( new() { IgnorePiece = Entity } ).Any( x => x.To == position ) )
 				return true;
-			}
 		}
-		IsCurrentlyChecked = false;
-
-		Log.Info( "King is not checked" );
 		return false;
+	}
+
+	public bool IsInCheck()
+	{
+
+		return WouldBeInCheck( Entity.MapPosition, true );
 	}
 
 
@@ -172,10 +166,11 @@ public partial class KingMove : ChessMoveComponent
 	[Event( "Chess.PostGlobalMove" )]
 	public void PostGlobalMove( ChessMoveComponent ComponentThatMoved, MoveInfo CurrentMove )
 	{
-		IsCurrentlyChecked = IsInCheck();
 
-		if ( IsCurrentlyChecked )
+		/* if ( IsCurrentlyChecked )
 			GetPossibleMoves();
+
+		IsCurrentlyChecked = IsInCheck(); */
 	}
 
 }

@@ -1,3 +1,5 @@
+using Chess.Systems.Chess;
+
 namespace Chess;
 
 [Prefab]
@@ -11,7 +13,7 @@ public partial class PawnMove : ChessMoveComponent
 
 
 	int TeamAmount => Entity.Team == PlayerTeam.White ? 1 : -1;
-	public override List<MoveInfo> GetPossibleMoves( bool CheckCheck = false, bool CheckMate = false )
+	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
 		List<MoveInfo> moves = new List<MoveInfo>();
 
@@ -34,12 +36,12 @@ public partial class PawnMove : ChessMoveComponent
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( 0, TeamAmount ) } );
 		}
 		tile = Chessboard.Instance.GetTile( Entity.MapPosition + new Vector2Int( 1, TeamAmount ) );
-		if ( tile is not null && tile.CurrentPiece.IsValid() && (CheckMate || tile.CurrentPiece.Team != Entity.Team) )
+		if ( tile is not null && tile.CurrentPiece.IsValid() && (tile.CurrentPiece.Team != Entity.Team) )
 		{
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( 1, TeamAmount ), IsEnemy = true } );
 		}
 		tile = Chessboard.Instance.GetTile( Entity.MapPosition + new Vector2Int( -1, TeamAmount ) );
-		if ( tile is not null && tile.CurrentPiece.IsValid() && (CheckMate || tile.CurrentPiece.Team != Entity.Team) )
+		if ( tile is not null && tile.CurrentPiece.IsValid() && (tile.CurrentPiece.Team != Entity.Team) )
 		{
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( -1, TeamAmount ), IsEnemy = true } );
 		}
@@ -58,9 +60,13 @@ public partial class PawnMove : ChessMoveComponent
 		}
 
 
-		if ( !CheckCheck && KingIsInCheck() )
+		if ( KingIsInCheck() )
 		{
-			moves = moves.Where( x => PositionSavesKing( x.To ) ).ToList();
+			moves = moves.Where( x => PositionSavesKing( x ) ).ToList();
+		}
+		else if ( request.CheckForMovedCheck )
+		{
+			moves = moves.Where( x => !WouldPutKingInCheckIfMovedTo( x ) ).ToList();
 		}
 
 
@@ -84,6 +90,19 @@ public partial class PawnMove : ChessMoveComponent
 			DoubleJumped = true;
 		else
 			DoubleJumped = false;
+
+		//Convert to queen if at end
+		if ( (Entity.Team == PlayerTeam.White && goal.To.y == Chessboard.Instance.Size - 1) || (Entity.Team == PlayerTeam.Black && goal.To.y == 0) )
+		{
+			var queen = ChessPieceLibraryHelper.GetPiece( ChessPieceType.Queen, Entity.Team );
+			base.MoveTo( goal );
+
+			Chessboard.Instance.SetPiece( goal.To, queen );
+			Chessboard.Instance.GatherPieces();
+			Entity.Delete();
+			Event.Run( "Chess.PostGlobalMove", this, goal );
+			return;
+		}
 		base.MoveTo( goal );
 	}
 }

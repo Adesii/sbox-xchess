@@ -97,6 +97,7 @@ public partial class Player : AnimatedEntity
 						if ( move.IsEnemy && tile.IsValid() && move.To == tile.MapPosition )
 							wantsToattack = true;
 					}
+
 				}
 
 				//Log.Info( $"Possible moves: {CachedMoves?.Count}" );
@@ -110,7 +111,7 @@ public partial class Player : AnimatedEntity
 					SelectedPiece = tile.CurrentPiece;
 					SelectedPiece.Owner = this;
 					SelectedPiece.Predictable = true;
-					CachedMoves = SelectedPiece.MoveComponent.GetPossibleMoves();
+					CachedMoves = SelectedPiece.MoveComponent.GetPossibleMoves( new() { CheckForMovedCheck = true } );
 					CachedMovesPiece = SelectedPiece;
 
 				}

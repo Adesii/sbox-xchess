@@ -22,24 +22,19 @@ public partial class Chessboard : Entity
 	{
 		get
 		{
-			if ( _kings == null )
-			{
-				GatherPieces();
-			}
+
+			GatherPieces();
+
+
 			return _kings;
 		}
 	}
 
 	private Dictionary<PlayerTeam, ChessPiece> _kings;
 
-	private Dictionary<PlayerTeam, List<ChessPiece>> Pieces { get; set; }
+	public Dictionary<PlayerTeam, List<ChessPiece>> Pieces { get; set; }
 	public IEnumerable<ChessPiece> GetEnemyPieces( ChessPiece piece )
 	{
-		if ( Pieces == null || Pieces.Count == 0 )
-		{
-			GatherPieces();
-			Log.Info( "Gathered pieces" + Pieces.Count );
-		}
 		return Pieces.Where( x => x.Key != piece.Team ).SelectMany( x => x.Value ).Where( x => x.IsValid() );
 	}
 
@@ -55,7 +50,7 @@ public partial class Chessboard : Entity
 
 
 
-	private void GatherPieces()
+	public void GatherPieces()
 	{
 		Pieces = new Dictionary<PlayerTeam, List<ChessPiece>>();
 		foreach ( var piece in Entity.All.OfType<ChessPiece>() )
@@ -70,7 +65,7 @@ public partial class Chessboard : Entity
 		_kings = new Dictionary<PlayerTeam, ChessPiece>();
 		foreach ( var piece in Entity.All.OfType<ChessPiece>().Where( x => x.MoveComponent is KingMove ) )
 		{
-			Kings.Add( piece.Team, piece );
+			_kings.Add( piece.Team, piece );
 		}
 	}
 
@@ -151,7 +146,7 @@ public partial class Chessboard : Entity
 
 	}
 
-	private void SetPiece( Vector2Int position, ChessPiece piece )
+	public void SetPiece( Vector2Int position, ChessPiece piece )
 	{
 		if ( Map.TryGetValue( position, out ChessTile value ) )
 		{
@@ -342,5 +337,17 @@ public partial class Chessboard : Entity
 	public bool IsInBounds( Vector2Int goal )
 	{
 		return goal.x >= 0 && goal.x < Size && goal.y >= 0 && goal.y < Size;
+	}
+
+
+	[Event( "Chess.PostGlobalMove" )]
+	public static void UpdateKingsCheckState( ChessMoveComponent ComponentThatMoved, ChessMoveComponent.MoveInfo CurrentMove )
+	{
+		foreach ( var item in Instance.Kings )
+		{
+			var kingmove = item.Value.MoveComponent as KingMove;
+			kingmove.IsCurrentlyChecked = kingmove.IsInCheck();
+			//Log.Info( $"King {item.Key} is currently checked: {kingmove.IsCurrentlyChecked}" );
+		}
 	}
 }

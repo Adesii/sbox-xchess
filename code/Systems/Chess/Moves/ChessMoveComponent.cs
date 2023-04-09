@@ -9,14 +9,48 @@ public partial class ChessMoveComponent : ChessComponent
 		public Vector2Int From;
 		public Vector2Int To;
 		public bool IsEnemy;
+		public bool IsAlly;
 
 		public string EventToCall;
+
+		public override string ToString()
+		{
+			return $"From: {From}, To: {To}, IsEnemy: {IsEnemy}, IsAlly: {IsAlly}, EventToCall: {EventToCall}";
+		}
+	}
+
+	public struct MoveSearchRequest
+	{
+		public Vector2Int From;
+		public bool CheckNewKingPosition;
+		public Vector2Int KingPosition;
+		public bool OverrideFrom;
+		public bool CheckCheck;
+		public bool CheckProtection;
+
+		public bool SimulateMove;
+		public Vector2Int SimulatedPosition;
+
+		public bool CheckForCheckOverlap;
+		public Vector2Int CheckForCheckOverlapPosition;
+
+		public bool CheckForMovedCheck;
+
+		public ChessPiece IgnorePiece;
+		public ChessPiece FakePiece;
+		public Vector2Int FakePiecePosition;
+
+
+		public override string ToString()
+		{
+			return $"From: {From}, CheckNewKingPosition: {CheckNewKingPosition}, KingPosition: {KingPosition}, OverrideFrom: {OverrideFrom}, CheckCheck: {CheckCheck}, CheckProtection: {CheckProtection}, SimulateMove: {SimulateMove}, SimulatedPosition: {SimulatedPosition}";
+		}
 	}
 
 	[Net]
 	public bool HasMoved { get; set; }
 
-	public virtual List<MoveInfo> GetPossibleMoves( bool CheckCheck = false, bool CheckMate = false )
+	public virtual List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
 		List<MoveInfo> moves = new List<MoveInfo>();
 		return moves;
@@ -50,25 +84,26 @@ public partial class ChessMoveComponent : ChessComponent
 		return Chessboard.Instance.Kings[Entity.Team].MoveComponent is KingMove king && king.IsCurrentlyChecked;
 	}
 
-	public bool PositionSavesKing( Vector2Int position )
+	public bool PositionSavesKing( MoveInfo info )
 	{
 		var king = Chessboard.Instance.Kings[Entity.Team];
 		var kingMove = king.MoveComponent as KingMove;
 		int checksBlocked = 0;
 		Dictionary<ChessPiece, int> blocksByPiece = new Dictionary<ChessPiece, int>();
+		var simulatedKingPosition = king.MapPosition;
 
 		// Iterate over all checking pieces
 		foreach ( var checkingPiece in kingMove.PiecesChecking.Where( x => x.IsValid() ) )
 		{
 			// Get the possible moves for the checking piece
 			var checkingPieceMove = checkingPiece.MoveComponent as ChessMoveComponent;
-			var checkingPieceMoves = checkingPieceMove.GetPossibleMoves( true );
+			var checkingPieceMoves = checkingPieceMove.GetPossibleMoves( new() { SimulateMove = true, SimulatedPosition = info.To } );
 
 			// Check if the checking piece can be blocked by any piece at the given position
 			bool canBlock = false;
 			foreach ( var move in checkingPieceMoves )
 			{
-				if ( move.To == position && checkingPieceMove.BlocksCheck( position, king.MapPosition ) )
+				if ( move.To == info.To && checkingPieceMove.BlocksCheck( info.To, simulatedKingPosition ) || (checkingPieceMove.Entity.MapPosition == info.To) )
 				{
 					canBlock = true;
 					if ( blocksByPiece.ContainsKey( checkingPiece ) )
@@ -85,16 +120,10 @@ public partial class ChessMoveComponent : ChessComponent
 
 			if ( !canBlock )
 			{
-				// If the checking piece cannot be blocked, check if the king can capture it
-				if ( kingMove.BlocksCheck( checkingPiece.MapPosition, king.MapPosition ) )
-				{
-					checksBlocked++;
-				}
-				else
-				{
-					// If the checking piece cannot be blocked or captured, the king is in checkmate
-					return false;
-				}
+
+				// If the checking piece cannot be blocked or captured, the king is in checkmate
+				return false;
+
 			}
 		}
 
@@ -124,45 +153,170 @@ public partial class ChessMoveComponent : ChessComponent
 		}
 
 		// If none of the above conditions are met, the king is in checkmate
-		return false;
+		if ( checksBlocked == kingMove.PiecesChecking.Count )
+		{
+			return true;
+		}
+		else if ( checksBlocked == 1 && blocksByPiece.Count == 0 )
+		{
+			return false;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
-	protected bool WouldBeInCheck( Vector2Int position )
+	protected bool WouldBeInCheck( Vector2Int position, bool addpieces = false )
 	{
+		if ( addpieces && Chessboard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmove )
+			kingmove.PiecesChecking.Clear();
+
+		bool ischecking = false;
 		foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove && x.IsValid() ) )
 		{
-			if ( piece.MoveComponent.GetPossibleMoves( true ).Any( x => x.To == position ) )
+			MoveSearchRequest request = new() { CheckNewKingPosition = true, KingPosition = position };
+			if ( piece.MoveComponent.GetPossibleMoves( request ).Any( x => x.To == position ) )
 			{
-				return true;
+				if ( addpieces && Chessboard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmoves )
+				{
+					kingmoves.PiecesChecking.Add( piece );
+					Log.Info( "Added piece to checking list" );
+				}
+				ischecking = true;
+				continue;
 			}
-		}
-		return false;
-	}
 
-	protected bool WouldBeInCheckMate( Vector2Int position )
-	{
-		foreach ( var piece in _EnemyPiecesOnboard.Where( x => x.MoveComponent is not KingMove ) )
-		{
-			if ( piece.MoveComponent.GetPossibleMoves( true, true ).Any( x => x.To == position ) )
-			{
-				return true;
-			}
 		}
-		return false;
+		return ischecking;
 	}
 
 	public virtual bool BlocksCheck( Vector2Int position, Vector2Int kingPosition )
 	{
-		return false;
+		if ( position == Entity.MapPosition ) return true;
+		return GetPossibleMoves( new() { CheckForCheckOverlap = true, CheckForCheckOverlapPosition = position, CheckCheck = true } ).Any();
+	}
+
+	protected enum ReturnCode
+	{
+		Continue,
+		Break,
+		Return,
+		Check
+	}
+
+	protected virtual ReturnCode ClassifyMove( MoveSearchRequest request, Vector2Int Current, ChessTile Tile, ref List<MoveInfo> moves )
+	{
+
+		/* if ( request.SimulateMove )
+		{
+			if ( Current == request.SimulatedPosition || Entity.MapPosition == request.SimulatedPosition )
+			{
+				Log.Info( request );
+				moves.Clear();
+				moves.Add( new MoveInfo() { To = Current } );
+				Log.Info( "Simulated move would be invalid" );
+				return ReturnCode.Return;
+			}
+		} */
+		if ( request.CheckNewKingPosition )
+		{
+			if ( Current == request.KingPosition )
+			{
+				moves.Clear();
+				moves.Add( new MoveInfo() { To = Current } );
+				//Log.Info( $"King would be in check at: {request.KingPosition} by piece: {Entity}" );
+				return ReturnCode.Check;
+			}
+
+		}
+		if ( Tile.CurrentPiece.IsValid() )
+		{
+			if ( request.CheckCheck && IsKing( Tile.CurrentPiece ) )
+			{
+				if ( !request.CheckForCheckOverlap )
+					moves.Clear();
+				moves.Add( new MoveInfo() { To = Current, IsEnemy = true } );
+				//Log.Info( "King is in check" );
+				if ( request.IgnorePiece != Tile.CurrentPiece )
+					return ReturnCode.Check;
+			}
+			if ( request.CheckProtection && Tile.CurrentPiece.Team == Entity.Team && Tile.CurrentPiece != Entity )
+			{
+				moves.Add( new MoveInfo() { To = Current, IsAlly = true } );
+				return ReturnCode.Break;
+			}
+			else if ( Tile.CurrentPiece.Team == Entity.Team )
+			{
+				return ReturnCode.Break;
+			}
+			if ( Tile.CurrentPiece.Team != Entity.Team )
+			{
+				if ( !IsKing( Tile.CurrentPiece ) )
+					moves.Add( new MoveInfo() { To = Current, IsEnemy = true } );
+				if ( request.IgnorePiece != Tile.CurrentPiece )
+					return ReturnCode.Break;
+			}
+		}
+		if ( request.FakePiece.IsValid() && request.FakePiecePosition == Current )
+		{
+			if ( request.CheckCheck && IsKing( request.FakePiece ) )
+			{
+				if ( !request.CheckForCheckOverlap )
+					moves.Clear();
+				moves.Add( new MoveInfo() { To = Current, IsEnemy = true } );
+				//Log.Info( "King is in check" );
+				return ReturnCode.Check;
+			}
+			if ( request.CheckProtection && request.FakePiece.Team == Entity.Team && request.FakePiece != Entity )
+			{
+				moves.Add( new MoveInfo() { To = Current, IsAlly = true } );
+				return ReturnCode.Break;
+			}
+			else if ( request.FakePiece.Team == Entity.Team )
+			{
+				return ReturnCode.Break;
+			}
+			if ( request.FakePiece.Team != Entity.Team )
+			{
+				if ( !IsKing( request.FakePiece ) )
+					moves.Add( new MoveInfo() { To = Current, IsEnemy = true } );
+				return ReturnCode.Break;
+			}
+		}
+		moves.Add( new MoveInfo() { To = Current } );
+		return ReturnCode.Continue;
+
 	}
 
 
 	private static IEnumerable<IEnumerable<T>> GetCombinations<T>( IEnumerable<T> elements, int k )
 	{
-		return k == 0 ? new[] { new T[0] } :
+		return k == 0 ? new[] { Array.Empty<T>() } :
 		  elements.SelectMany( ( e, i ) =>
 			GetCombinations( elements.Skip( i + 1 ), k - 1 ).Select( c => (new[] { e }).Concat( c ) ) );
 	}
+
+
+	public bool WouldPutKingInCheckIfMovedTo( MoveInfo position )
+	{
+		if ( Chessboard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmove )
+		{
+			foreach ( var item in Chessboard.Instance.GetEnemyPieces( Entity ) )
+			{
+				var moves = item.MoveComponent.GetPossibleMoves( new() { CheckCheck = true, IgnorePiece = Entity, FakePiece = Entity, FakePiecePosition = position.To } );
+				if ( moves.Any( x => x.To == kingmove.Entity.MapPosition ) && position.To != item.MapPosition )
+				{
+					//Log.Info( $"Moves: {moves.Count} {moves[0]}" );
+					//Log.Info( "Would put king in check" );
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 
 }
 

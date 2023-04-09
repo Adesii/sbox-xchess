@@ -15,6 +15,7 @@ public static class ChessPieceLibraryHelper
 	{
 		var piecePrefab = PrefabLibrary.Spawn<ChessPiece>( $"/prefabs/{type.ToString().ToLower()}.prefab" );
 		piecePrefab.Team = color;
+		piecePrefab.UpdateGlow();
 		return piecePrefab;
 	}
 

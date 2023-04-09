@@ -4,7 +4,7 @@ namespace Chess;
 public class KnightMove : ChessMoveComponent
 {
 
-	public override List<MoveInfo> GetPossibleMoves( bool CheckCheck = false, bool CheckMate = false )
+	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
 		List<MoveInfo> moves = new List<MoveInfo>();
 		var listofDirections = new List<Vector2Int>(){
@@ -25,22 +25,14 @@ public class KnightMove : ChessMoveComponent
 			var tile = Chessboard.Instance.GetTile( current );
 			if ( tile is null )
 				continue;
-			if ( tile.CurrentPiece.IsValid() )
-			{
-				if ( CheckMate || tile.CurrentPiece.Team != Entity.Team )
-				{
-					if ( !CheckMate | !IsKing( tile.CurrentPiece ) )
-						moves.Add( new MoveInfo() { To = current, IsEnemy = true } );
-				}
-				if ( !CheckMate )
-					continue;
-			}
-			moves.Add( new MoveInfo() { To = current } );
+			var code = ClassifyMove( request, current, tile, ref moves );
+			if ( code == ReturnCode.Return )
+				return moves;
 		}
 
-		if ( !CheckCheck && KingIsInCheck() )
+		if ( KingIsInCheck() )
 		{
-			moves = moves.Where( x => PositionSavesKing( x.To ) ).ToList();
+			moves = moves.Where( x => PositionSavesKing( x ) ).ToList();
 		}
 		return moves;
 	}
