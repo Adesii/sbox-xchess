@@ -1,2 +1,1 @@
-# sbox-template.fps
- 
+# sbox-xchess
