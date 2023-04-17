@@ -4,7 +4,6 @@ namespace Chess.Addons.Classic;
 
 public partial class ClassicBoard : Chessboard
 {
-	public static new ClassicBoard Instance => ChessGame.Instance.Chessboard as ClassicBoard;
 
 
 	[Net, Property]
@@ -96,9 +95,10 @@ public partial class ClassicBoard : Chessboard
 		{
 			for ( int x = 0; x < Size; x++ )
 			{
-				var tile = new ChessTile
+				var tile = new ClassicTile
 				{
-					Transform = Transform
+					Transform = Transform,
+					Parent = this
 				};
 				tile.Position += new Vector3( Size / 2, Size / 2, 0 ) * TileSize;
 				tile.Position -= new Vector3( x, y, 0 ) * TileSize;
@@ -121,6 +121,8 @@ public partial class ClassicBoard : Chessboard
 	{
 		if ( Map.TryGetValue( position, out ChessTile value ) )
 		{
+			piece.CurrentBoard = this;
+			piece.Parent = value;
 			value.CurrentPiece = piece;
 		}
 		else
@@ -133,12 +135,13 @@ public partial class ClassicBoard : Chessboard
 	[ConCmd.Server( "CreateBoardFromAN" )]
 	public static void CreateBoardFromAN( string fen )
 	{
+		if ( ConsoleSystem.Caller.GetBoard() is not Chessboard board )
+			return;
 		ClearBoard();
-		var board = Instance;
 		board.CreateBoard();
 		board.PlacePiecesFromAN( fen );
 	}
-	public void PlacePiecesFromAN( string fenString )
+	public override void PlacePiecesFromAN( string fenString )
 	{
 		string[] parts = fenString.Split( ' ' );
 
@@ -171,7 +174,6 @@ public partial class ClassicBoard : Chessboard
 
 	public override void DebugDraw()
 	{
-		Log.Info( "DebugDraw" );
 		if ( Map == null )
 		{
 			return;
@@ -294,10 +296,10 @@ public partial class ClassicBoard : Chessboard
 
 
 	[Event( "Chess.PostGlobalMove" )]
-	public void UpdateKingsCheckState( ClassicChessMoveComponent ComponentThatMoved, ClassicChessMoveComponent.MoveInfo CurrentMove )
+	public void UpdateKingsCheckState( ClassicChessMoveComponent ComponentThatMoved, MoveInfo CurrentMove )
 	{
 
-		foreach ( var item in Instance.Kings )
+		foreach ( var item in Kings )
 		{
 			var kingmove = item.Value.MoveComponent as KingMove;
 			kingmove.IsCurrentlyChecked = kingmove.IsInCheck();
@@ -308,8 +310,9 @@ public partial class ClassicBoard : Chessboard
 	[ConCmd.Server]
 	public static void RecreateClassicChessboard()
 	{
+		if ( ConsoleSystem.Caller.GetBoard() is not ClassicBoard board )
+			return;
 		ClearBoard();
-		var board = Instance;
 		board.CreateBoard();
 		board.PlacePiecesFromAN( "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" );
 		board.Pieces?.Clear();

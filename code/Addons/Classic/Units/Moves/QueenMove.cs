@@ -31,7 +31,7 @@ public class QueenMove : ClassicChessMoveComponent
 			while ( true )
 			{
 				current += dir;
-				var tile = ClassicBoard.Instance.GetTile( current );
+				var tile = CurrentBoard.GetTile( current );
 				if ( tile is null )
 					break;
 				var code = ClassifyMove( request, current, tile, ref moves );

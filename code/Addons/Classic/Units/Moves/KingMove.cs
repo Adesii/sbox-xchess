@@ -10,7 +10,7 @@ public partial class KingMove : ClassicChessMoveComponent
 	public bool IsCurrentlyChecked { get; set; }
 
 	[Net]
-	public List<ChessPiece> PiecesChecking { get; set; } = new List<ChessPiece>();
+	public IList<ChessPiece> PiecesChecking { get; set; } = new List<ChessPiece>();
 
 	public override List<MoveInfo> GetPossibleMoves( MoveSearchRequest request = default )
 	{
@@ -31,7 +31,7 @@ public partial class KingMove : ClassicChessMoveComponent
 		{
 			var current = Entity.MapPosition;
 			current += dir;
-			var tile = ClassicBoard.Instance.GetTile( current );
+			var tile = CurrentBoard.GetTile( current );
 			if ( tile is null )
 				continue;
 			if ( tile.CurrentPiece.IsValid() )
@@ -75,7 +75,7 @@ public partial class KingMove : ClassicChessMoveComponent
 				while ( true )
 				{
 					current += dir;
-					var tile = ClassicBoard.Instance.GetTile( current );
+					var tile = CurrentBoard.GetTile( current );
 					if ( tile is null )
 						break;
 					if ( tile.CurrentPiece.IsValid() )
@@ -104,7 +104,7 @@ public partial class KingMove : ClassicChessMoveComponent
 
 				//Check all other team pieces to see if they can block the check
 				bool canBlock = false;
-				foreach ( var piece in ClassicBoard.Instance.GetTeamPieces( Entity ) )
+				foreach ( var piece in CurrentBoard.GetTeamPieces( Entity ) )
 				{
 					if ( piece.MoveComponent.GetPossibleMoves().Count > 0 )
 					{
@@ -155,13 +155,13 @@ public partial class KingMove : ClassicChessMoveComponent
 		if ( component != this ) return;
 		Log.Info( "Castling" );
 		var direction = (CurrentMove.To - CurrentMove.From).Normal;
-		var rook = ClassicBoard.Instance.GetTile( Entity.MapPosition + direction );
+		var rook = CurrentBoard.GetTile( Entity.MapPosition + direction );
 		if ( !rook.IsValid() )
 		{
 			Log.Error( "Rook not found at " + (Entity.MapPosition - direction) + "" );
 			return;
 		}
-		ClassicBoard.Instance.Move( rook.CurrentPiece, direction + CurrentMove.From );
+		CurrentBoard.Move( rook.CurrentPiece, direction + CurrentMove.From );
 	}
 
 	[Event( "Chess.PostGlobalMove" )]

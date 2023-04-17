@@ -21,27 +21,27 @@ public partial class PawnMove : ClassicChessMoveComponent
 		//make a queen move for now but stop at the first enemy
 		if ( !HasMoved )
 		{
-			var nottile = ClassicBoard.Instance.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount ) );
+			var nottile = CurrentBoard.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount ) );
 			if ( nottile.IsValid() && !nottile.CurrentPiece.IsValid() )
 			{
-				var jumptile = ClassicBoard.Instance.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount * 2 ) );
+				var jumptile = CurrentBoard.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount * 2 ) );
 				if ( jumptile is not null && jumptile.CurrentPiece.IsValid() == false )
 				{
 					moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( 0, TeamAmount * 2 ) } );
 				}
 			}
 		}
-		var tile = ClassicBoard.Instance.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount ) );
+		var tile = CurrentBoard.GetTile( Entity.MapPosition + new Vector2Int( 0, TeamAmount ) );
 		if ( tile is not null && tile.CurrentPiece.IsValid() == false )
 		{
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( 0, TeamAmount ) } );
 		}
-		tile = ClassicBoard.Instance.GetTile( Entity.MapPosition + new Vector2Int( 1, TeamAmount ) );
+		tile = CurrentBoard.GetTile( Entity.MapPosition + new Vector2Int( 1, TeamAmount ) );
 		if ( tile is not null && tile.CurrentPiece.IsValid() && (tile.CurrentPiece.Team != Entity.Team) )
 		{
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( 1, TeamAmount ), IsEnemy = true } );
 		}
-		tile = ClassicBoard.Instance.GetTile( Entity.MapPosition + new Vector2Int( -1, TeamAmount ) );
+		tile = CurrentBoard.GetTile( Entity.MapPosition + new Vector2Int( -1, TeamAmount ) );
 		if ( tile is not null && tile.CurrentPiece.IsValid() && (tile.CurrentPiece.Team != Entity.Team) )
 		{
 			moves.Add( new MoveInfo() { To = Entity.MapPosition + new Vector2Int( -1, TeamAmount ), IsEnemy = true } );
@@ -50,7 +50,7 @@ public partial class PawnMove : ClassicChessMoveComponent
 		//en passant
 		if ( HasMoved )
 		{
-			var lastMove = ClassicBoard.Instance.LastMove;
+			var lastMove = CurrentBoard.LastMove;
 			if ( lastMove is not null && lastMove.PieceMoved is not null && lastMove.PieceMoved.Team != Entity.Team && lastMove.PieceMoved.MoveComponent is PawnMove pawn && pawn.DoubleJumped )
 			{
 				if ( lastMove.Goal.y == Entity.MapPosition.y && Math.Abs( lastMove.Goal.x - Entity.MapPosition.x ) == 1 )
@@ -80,7 +80,7 @@ public partial class PawnMove : ClassicChessMoveComponent
 	public void EnPassant( ClassicChessMoveComponent component, MoveInfo info )
 	{
 		if ( component != this ) return;
-		ClassicBoard.Instance.LastMove.PieceMoved?.Delete();
+		CurrentBoard.LastMove.PieceMoved?.Delete();
 	}
 
 	public override void MoveTo( MoveInfo goal )
@@ -93,13 +93,13 @@ public partial class PawnMove : ClassicChessMoveComponent
 			DoubleJumped = false;
 
 		//Convert to queen if at end
-		if ( (Entity.Team == PlayerTeam.White && goal.To.y == ClassicBoard.Instance.Size - 1) || (Entity.Team == PlayerTeam.Black && goal.To.y == 0) )
+		if ( (Entity.Team == PlayerTeam.White && goal.To.y == CurrentBoard.Size - 1) || (Entity.Team == PlayerTeam.Black && goal.To.y == 0) )
 		{
 			var queen = ChessPieceLibraryHelper.GetPiece( ChessPieceType.Queen, Entity.Team );
 			base.MoveTo( goal );
 
-			ClassicBoard.Instance.SetPiece( goal.To, queen );
-			ClassicBoard.Instance.GatherPieces();
+			CurrentBoard.SetPiece( goal.To, queen );
+			CurrentBoard.GatherPieces();
 			Entity.Delete();
 			Event.Run( "Chess.PostGlobalMove", this, goal );
 			return;

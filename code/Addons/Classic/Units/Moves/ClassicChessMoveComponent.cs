@@ -1,10 +1,10 @@
 using Chess.Addons.Classic;
 namespace Chess;
 
-public partial class ClassicChessMoveComponent : MoveComponent
+public partial class ClassicChessMoveComponent : ChessComponent<ClassicBoard>
 {
 
-	protected IEnumerable<ChessPiece> _EnemyPiecesOnboard => ClassicBoard.Instance.GetEnemyPieces( Entity );
+	protected IEnumerable<ChessPiece> _EnemyPiecesOnboard => CurrentBoard.GetEnemyPieces( Entity );
 
 
 	[Net]
@@ -20,10 +20,10 @@ public partial class ClassicChessMoveComponent : MoveComponent
 	{
 		HasMoved = true;
 		goal.From = Entity.MapPosition;
-		ClassicBoard.Instance.Move( Entity, goal.To );
+		CurrentBoard.Move( Entity, goal.To );
 		if ( goal.EventToCall != null )
 			Event.Run( goal.EventToCall, this, goal );
-		ClassicBoard.Instance.LastMove = new LastMove()
+		CurrentBoard.LastMove = new LastMove()
 		{
 			Start = Entity.MapPosition,
 			Goal = goal.To,
@@ -41,12 +41,12 @@ public partial class ClassicChessMoveComponent : MoveComponent
 
 	public bool KingIsInCheck()
 	{
-		return ClassicBoard.Instance.Kings[Entity.Team].MoveComponent is KingMove king && king.IsCurrentlyChecked;
+		return CurrentBoard.Kings[Entity.Team].MoveComponent is KingMove king && king.IsCurrentlyChecked;
 	}
 
 	public bool PositionSavesKing( MoveInfo info )
 	{
-		var king = ClassicBoard.Instance.Kings[Entity.Team];
+		var king = CurrentBoard.Kings[Entity.Team];
 		var kingMove = king.MoveComponent as KingMove;
 		int checksBlocked = 0;
 		Dictionary<ChessPiece, int> blocksByPiece = new Dictionary<ChessPiece, int>();
@@ -129,7 +129,7 @@ public partial class ClassicChessMoveComponent : MoveComponent
 
 	protected bool WouldBeInCheck( Vector2Int position, bool addpieces = false )
 	{
-		if ( addpieces && ClassicBoard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmove )
+		if ( addpieces && CurrentBoard.Kings[Entity.Team].MoveComponent is KingMove kingmove )
 			kingmove.PiecesChecking.Clear();
 
 		bool ischecking = false;
@@ -138,7 +138,7 @@ public partial class ClassicChessMoveComponent : MoveComponent
 			MoveSearchRequest request = new() { CheckNewKingPosition = true, KingPosition = position };
 			if ( piece.MoveComponent.GetPossibleMoves( request ).Any( x => x.To == position ) )
 			{
-				if ( addpieces && ClassicBoard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmoves )
+				if ( addpieces && CurrentBoard.Kings[Entity.Team].MoveComponent is KingMove kingmoves )
 				{
 					kingmoves.PiecesChecking.Add( piece );
 					Log.Info( "Added piece to checking list" );
@@ -260,9 +260,9 @@ public partial class ClassicChessMoveComponent : MoveComponent
 
 	public bool WouldPutKingInCheckIfMovedTo( MoveInfo position )
 	{
-		if ( ClassicBoard.Instance.Kings[Entity.Team].MoveComponent is KingMove kingmove )
+		if ( CurrentBoard.Kings[Entity.Team].MoveComponent is KingMove kingmove )
 		{
-			foreach ( var item in ClassicBoard.Instance.GetEnemyPieces( Entity ) )
+			foreach ( var item in CurrentBoard.GetEnemyPieces( Entity ) )
 			{
 				var moves = item.MoveComponent.GetPossibleMoves( new() { CheckCheck = true, IgnorePiece = Entity, FakePiece = Entity, FakePiecePosition = position.To } );
 				if ( moves.Any( x => x.To == kingmove.Entity.MapPosition ) && position.To != item.MapPosition )

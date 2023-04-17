@@ -1,6 +1,6 @@
 namespace Chess.Addons.Classic;
 
-public class ClassicTile : ChessTile
+public class ClassicTile : ChessTile<ClassicBoard>
 {
 	public override void DebugDraw()
 	{
@@ -8,6 +8,6 @@ public class ClassicTile : ChessTile
 		var Number = MapPosition.y + 1;
 		//DebugOverlay.Text( $"{Letter}{Number}", Position, Color );
 		float boxoffsetsize = 3f;
-		DebugOverlay.Box( Position - ((Vector3)ClassicBoard.Instance.TileSize / 2 - (Vector3)boxoffsetsize).WithZ( 0 ), Position + ((Vector3)ClassicBoard.Instance.TileSize / 2 - boxoffsetsize).WithZ( 2 ), Color );
+		DebugOverlay.Box( Position - ((Vector3)CurrentBoard.TileSize / 2 - (Vector3)boxoffsetsize).WithZ( 0 ), Position + ((Vector3)CurrentBoard.TileSize / 2 - boxoffsetsize).WithZ( 2 ), Color );
 	}
 }

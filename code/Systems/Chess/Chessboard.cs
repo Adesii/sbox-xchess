@@ -1,23 +1,41 @@
+using System.Collections.Generic;
+using Chess.StateSystem;
 using Chess.Systems.Chess;
 using Editor;
 
 namespace Chess;
 
-public partial class Chessboard : Entity
+public partial class Chessboard : Entity, IStateMachine<TurnStateMachine>
 {
-	public static Chessboard Instance => ChessGame.Instance.Chessboard;
+
+	public static List<Chessboard> AllBoards = new();
+
+	[Net]
+	public TurnStateMachine StateMachine { get; set; }
+
+	[Net]
+	public IList<IClient> Players { get; set; }
 
 
 	public override void Spawn()
 	{
 		base.Spawn();
 		Transmit = TransmitType.Always;
+		StateMachine = new()
+		{
+			Parent = this
+		};
+
+		AllBoards.Add( this );
 	}
 
 	[ConCmd.Server]
 	public static void ClearBoard()
 	{
-		Instance?.Clear();
+		if ( ConsoleSystem.Caller.Components.Get<ChessboardAssignmentComponent>() is not ChessboardAssignmentComponent assignment )
+			return;
+
+		assignment.Chessboard.Clear();
 	}
 
 	protected virtual void Clear()
@@ -36,24 +54,33 @@ public partial class Chessboard : Entity
 
 
 	[Event.Tick.Server]
-
-	private static void Draw()
+	public static void Draw()
 	{
-		Instance?.DebugDraw();
+		foreach ( var board in AllBoards )
+		{
+			board.DebugDraw();
+		}
 	}
 	public virtual void DebugDraw()
 	{
-
+		Log.Info( "Drawing board" );
 	}
 
 	public virtual Transform GetTransformForTeam( PlayerTeam team ) { return new(); }
+
+	public override void Simulate( IClient cl )
+	{
+		StateMachine.Simulate( cl );
+	}
 
 
 
 	[ConCmd.Server( "Move" )]
 	public static void MakeMove( string from, string to )
 	{
-		var board = Instance;
+		if ( ConsoleSystem.Caller.Components.Get<ChessboardAssignmentComponent>() is not ChessboardAssignmentComponent assignment )
+			return;
+		var board = assignment.Chessboard;
 		var fromPos = DecodeMove( from.ToUpper() );
 		var toPos = DecodeMove( to.ToUpper() );
 		board.Move( fromPos, toPos );
@@ -90,4 +117,22 @@ public partial class Chessboard : Entity
 	}
 
 	public virtual ChessTile GetTile( Vector2Int goal ) { return null; }
+
+	public virtual void AddPlayer( IClient client )
+	{
+		if ( Players.Contains( client ) )
+			return;
+		if ( client.GetAssignment() is not ChessboardAssignmentComponent assignment )
+			return;
+		Players.Add( client );
+		assignment.Chessboard = this;
+		assignment.Team = Players.Count % 2 == 0 ? PlayerTeam.White : PlayerTeam.Black;
+
+		assignment.Ready = true;
+
+	}
+
+	public virtual void PlacePiecesFromAN( string fen )
+	{
+	}
 }

@@ -16,6 +16,7 @@
 
 	public override void Tick()
 	{
+		SetClass("inactive", !Game.LocalClient.IsInBoard());
 		if (!cursorImage.IsValid()) return;
 		cursorImage.Style.Left = Length.Fraction((FakeMousePosition.x / Screen.Width).Clamp(0, 0.999f));
 		cursorImage.Style.Top = Length.Fraction((FakeMousePosition.y / Screen.Height).Clamp(0, 0.999f));

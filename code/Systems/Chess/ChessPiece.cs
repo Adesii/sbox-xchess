@@ -4,6 +4,8 @@ namespace Chess;
 public partial class ChessPiece : Entity
 {
 	[Net]
+	public Chessboard CurrentBoard { get; set; }
+	[Net]
 	public PlayerTeam Team { get; set; }
 
 	[Net]

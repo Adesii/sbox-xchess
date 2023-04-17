@@ -35,3 +35,8 @@ public partial class ChessTile : Entity
 	{
 	}
 }
+
+public partial class ChessTile<T> : ChessTile, IBoardComponent<T> where T : Chessboard
+{
+	public T CurrentBoard => Parent as T;
+}

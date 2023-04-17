@@ -7,9 +7,6 @@ namespace Chess;
 public partial class ChessGame : GameManager
 {
 	public static ChessGame Instance => (ChessGame)Current;
-
-	[Net]
-	public Chessboard Chessboard { get; set; }
 	public ChessGame()
 	{
 		if ( Game.IsServer )
@@ -17,16 +14,13 @@ public partial class ChessGame : GameManager
 			_ = new Hud();
 		}
 	}
-	[Event.Entity.PostSpawn]
-	public void PostSpawn()
+
+	public override void Simulate( IClient cl )
 	{
-		var spot = Entity.All.OfType<ChessboardSpot>().FirstOrDefault();
-		if ( spot != null )
+		base.Simulate( cl );
+		foreach ( var board in Chessboard.AllBoards )
 		{
-			Chessboard = new ClassicBoard()
-			{
-				Transform = spot.Transform
-			};
+			board?.Simulate( cl );
 		}
 	}
 
@@ -70,5 +64,30 @@ public partial class ChessGame : GameManager
 		if ( client.Pawn is not Player player )
 			return;
 		player.DebugFly = !player.DebugFly;
+	}
+
+
+
+	[ConCmd.Server]
+	public static void StartGame()
+	{
+		if ( ConsoleSystem.Caller.GetBoard() is not Chessboard board )
+			return;
+		board.StateMachine.OnGamemodeStart();
+	}
+	[ConCmd.Server]
+	public static void EndGame()
+	{
+		if ( ConsoleSystem.Caller.GetBoard() is not Chessboard board )
+			return;
+		board.StateMachine.OnGamemodeEnd();
+	}
+
+	[ConCmd.Server]
+	public static void EndTurn()
+	{
+		if ( ConsoleSystem.Caller.GetBoard() is not Chessboard board )
+			return;
+		board.StateMachine.EndTurn();
 	}
 }
