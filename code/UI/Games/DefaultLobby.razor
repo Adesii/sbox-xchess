@@ -1,0 +1,15 @@
+@inherits Panel
+@using Sandbox;
+@using Sandbox.UI;
+@namespace Chess
+@attribute [StyleSheet("UI/Games/DefaultLobby.scss")]
+<root>
+    <div class="LobbyScreen">
+        <div class="LeftPlayerLobby">
+                @foreach (var item in @ChessboardSpot?.Players)
+                {
+                    <PlayerDisplay Player=@item />
+                }
+        </div>
+    </div>
+</root>

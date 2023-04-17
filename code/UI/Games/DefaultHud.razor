@@ -1,0 +1,10 @@
+@inherits Panel
+@using Sandbox;
+@using Sandbox.UI;
+@namespace Chess
+
+@attribute [StyleSheet("UI/Games/DefaultHud.scss")]
+<root>
+    <div class="GameHud" @ref=CurrentGameHud></div>
+    <div class="GameLobby" @ref=CurrentLobbyPanel></div>
+</root>

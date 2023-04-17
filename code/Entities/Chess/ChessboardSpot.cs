@@ -18,20 +18,22 @@ public partial class ChessboardSpot : Entity
 	[Net]
 	public Chessboard Chessboard { get; set; }
 
+	[Net]
+	public IList<IClient> Players { get; set; }
+
 	public override void Spawn()
 	{
 		base.Spawn();
-		Chessboard = new ClassicBoard()
-		{
-			Transform = Transform,
-		};
+		Transmit = TransmitType.Always;
 	}
 
 	public void AddPlayer( IClient client )
 	{
-		if ( Chessboard.IsValid() )
+		if ( !Players.Contains( client ) )
 		{
-			Chessboard.AddPlayer( client );
+			Players.Add( client );
+			Log.Info( $"Added player To lobby {client}" );
+			Hud.ShowLobby( To.Single( client ), NetworkIdent );
 		}
 	}
 }

@@ -1,0 +1,15 @@
+@namespace Chess
+@attribute [StyleSheet("UI/Games/PlayerDisplay.scss")]
+@inherits Panel
+
+<root>
+    <div class="PlayerIcon">
+        <img class="Avatar" @ref=Avatar />
+    </div>
+    <div class="PlayerTab">
+        <label class="PlayerName" text=@Player.Client.Name />
+        <div class="CounterGroup">
+            <label @ref=@Ready class="ReadyLabel" text=@IsReady></label>
+        </div>
+    </div>
+</root>
